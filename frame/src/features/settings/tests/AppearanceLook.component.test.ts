@@ -39,6 +39,8 @@ afterEach(() => {
 const cases: [string, "light" | "dark", string][] = [
   ["zephium", "dark", "liquid_glass"],
   ["zephium", "light", "liquid_glass"],
+  ["oled", "dark", "none"],
+  ["oled", "light", "none"],
   ["paper", "light", "none"],
   ["paper", "dark", "none"],
   ["nord", "dark", "liquid_glass"],

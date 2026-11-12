@@ -19,6 +19,24 @@
   },
   {
     "dark": {
+      "accent": "#8fb0f0",
+      "bg": "#000000",
+      "fg": "#e4e4e7"
+    },
+    "ground": {
+      "dark": "#000000",
+      "light": "#efefef"
+    },
+    "id": "oled",
+    "light": {
+      "accent": "#3b6fd4",
+      "bg": "#fafafa",
+      "fg": "#1b1b1e"
+    },
+    "name": "OLED Black"
+  },
+  {
+    "dark": {
       "accent": "#8fa8f2",
       "bg": "#1c1b19",
       "fg": "#eeebe4"

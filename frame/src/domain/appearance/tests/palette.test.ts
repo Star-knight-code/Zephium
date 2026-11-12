@@ -19,6 +19,16 @@ describe("theme storage", () => {
     expect(new Set(presets.map((entry) => entry.id)).size).toBe(presets.length);
   });
 
+  it("offers a true-black theme whose native ground is black too", () => {
+    const oled = preset("oled")!;
+    expect(presets[1]).toBe(oled);
+    expect(oled.dark.bg).toBe("#000000");
+    expect(oled.ground.dark).toBe("#000000");
+    expect(oled.dark.fg).not.toBe("#ffffff");
+    expect(resolveTheme("oled", "")).toMatchObject({ id: "oled", custom: false });
+    expect(parseTheme(serializeTheme(resolveTheme("oled", "").spec))?.from).toBe("oled");
+  });
+
   it("round-trips a custom theme and refuses anything core would refuse", () => {
     expect(parseTheme(serializeTheme(nord))).toEqual(nord);
     const text = serializeTheme(nord);

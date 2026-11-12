@@ -59,6 +59,15 @@ pub const PRESETS: &[Preset] = &[
         light: seeds(0xf1f1f3, 0x1c1c1f, 0x222226),
         dark: seeds(0x1a1a1d, 0xf4f4f6, 0xededf0),
     },
+    // A true-black ground for OLED panels: every chrome step from #000000
+    // toward the ink still rounds to #000000, so the window and the page
+    // ground stay unlit. The ink sits below white to keep text from blooming.
+    Preset {
+        id: "oled",
+        name: "OLED Black",
+        light: seeds(0xfafafa, 0x1b1b1e, 0x3b6fd4),
+        dark: seeds(0x000000, 0xe4e4e7, 0x8fb0f0),
+    },
     Preset {
         id: "paper",
         name: "Paper",
@@ -468,6 +477,51 @@ mod tests {
         assert_eq!(json.as_array().unwrap().len(), PRESETS.len());
         assert_eq!(json[0]["id"], "zephium");
         assert_eq!(json[0]["ground"]["dark"], "#1f1f22");
-        assert_eq!(json[4]["dark"]["accent"], "#88c0d0");
+        assert_eq!(json[5]["dark"]["accent"], "#88c0d0");
+    }
+
+    #[test]
+    fn the_oled_ground_is_true_black_at_every_contrast() {
+        let oled = preset("oled").expect("the OLED preset");
+        assert_eq!(oled.dark.bg, [0, 0, 0]);
+        for contrast in 0..=100 {
+            for raised in [false, true] {
+                assert_eq!(
+                    chrome("oled", None, contrast, raised, false),
+                    [0, 0, 0],
+                    "contrast {contrast}, raised {raised}"
+                );
+            }
+        }
+        // Its light mode is an ordinary near-white ladder, not black.
+        let light = chrome("oled", None, D, false, true);
+        assert!(light.iter().all(|channel| *channel >= 0xe8), "{light:?}");
+        assert!(!is_default("oled", None, D, false));
+
+        let json: serde_json::Value = serde_json::from_str(&presets_json()).unwrap();
+        assert_eq!(json[1]["id"], "oled");
+        assert_eq!(json[1]["dark"]["bg"], "#000000");
+        assert_eq!(json[1]["ground"]["dark"], "#000000");
+    }
+
+    #[test]
+    fn the_oled_ink_and_accent_read_against_black() {
+        // WCAG relative luminance against a black ground: (L + 0.05) / 0.05.
+        let ratio = |rgb: Rgb| {
+            let linear = |channel: u8| {
+                let c = f64::from(channel) / 255.0;
+                if c <= 0.04045 {
+                    c / 12.92
+                } else {
+                    ((c + 0.055) / 1.055).powf(2.4)
+                }
+            };
+            let [r, g, b] = rgb.map(linear);
+            (0.2126 * r + 0.7152 * g + 0.0722 * b + 0.05) / 0.05
+        };
+        let oled = preset("oled").expect("the OLED preset");
+        assert!(ratio(oled.dark.fg) >= 12.0, "body text clears AAA");
+        assert!(ratio(oled.dark.fg) < 21.0, "the ink is not pure white");
+        assert!(ratio(oled.dark.accent) >= 7.0, "the accent clears AAA");
     }
 }
