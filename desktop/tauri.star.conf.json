@@ -1,0 +1,43 @@
+{
+  "productName": "Star Browser",
+  "identifier": "app.starbrowser",
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "create": false,
+        "title": "Star Browser",
+        "width": 1200,
+        "height": 800,
+        "minWidth": 680,
+        "minHeight": 480,
+        "decorations": false,
+        "shadow": true,
+        "transparent": true
+      }
+    ]
+  },
+  "bundle": {
+    "publisher": "Star Browser",
+    "copyright": "Built from Zephium, MPL-2.0. Copyright © 2026 Zephium",
+    "homepage": "https://github.com/zephium-browser/Zephium",
+    "icon": [
+      "icons-star/32x32.png",
+      "icons-star/128x128.png",
+      "icons-star/128x128@2x.png",
+      "icons-star/icon.icns",
+      "icons-star/icon.ico"
+    ],
+    "windows": {
+      "nsis": {
+        "headerImage": "installer-star/nsis-header.bmp",
+        "sidebarImage": "installer-star/nsis-sidebar.bmp"
+      }
+    }
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": []
+    }
+  }
+}
