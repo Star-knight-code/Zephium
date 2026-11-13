@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from "svelte";
   import type {
     WorkContextDisclosureV1,
     WorkContextPurpose,
@@ -31,11 +32,14 @@
   let open = $state(false);
   let generation = 0;
   const key = $derived(JSON.stringify([purpose, selection]));
+  // Only a selection whose contents changed is previewed again. The composer
+  // hands over an equal selection on every keystroke, and re-entering pending
+  // for each would drop the chevron and shift the field beside the chip.
   $effect(() => {
     void key;
     const request = ++generation;
-    const current = selection;
-    const currentPurpose = purpose;
+    const current = untrack(() => selection);
+    const currentPurpose = untrack(() => purpose);
     preview = { kind: "pending" };
     void (async () => {
       const result = await observe(

@@ -86,3 +86,36 @@ test("a stale selection is reported honestly instead of pretending admission", a
   expect(onreview).toHaveBeenLastCalledWith(false);
   await screen.unmount();
 });
+
+test("an equal selection handed over again, as each keystroke does, keeps the chip and asks native once", async () => {
+  native.preview.mockReset();
+  native.preview.mockResolvedValue({ kind: "admitted", disclosure });
+  const selection = () => ({
+    environment: "env",
+    items: [
+      { element: "e-note", revision: "12" },
+      { element: "e-art", revision: "art-9" },
+    ],
+  });
+  const screen = await render(ContextManifest, {
+    profile: "p",
+    selection: selection(),
+    purpose: "agent",
+  });
+  const chip = screen.getByRole("button", { name: /Using 2 selected objects/ });
+  await expect.element(chip).toBeEnabled();
+  const width = chip.element().getBoundingClientRect().width;
+  for (let stroke = 0; stroke < 5; stroke++) {
+    await screen.rerender({ selection: selection() });
+    // Pending would drop the chevron and disable the chip, shifting the field beside it.
+    expect(chip.element()).toBeEnabled();
+    expect(chip.element().getBoundingClientRect().width).toBe(width);
+  }
+  expect(native.preview).toHaveBeenCalledTimes(1);
+
+  // A selection that really changed is previewed again.
+  await screen.rerender({
+    selection: { environment: "env", items: [{ element: "e-note", revision: "13" }] },
+  });
+  await expect.poll(() => native.preview.mock.calls.length).toBe(2);
+});
