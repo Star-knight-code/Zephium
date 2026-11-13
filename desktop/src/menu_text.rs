@@ -98,8 +98,11 @@ pub(crate) fn message(key: &str, english: &str) -> String {
 
 /// A menu label in the interface language, looked up by its English text:
 /// "Split View…" is `native_split_view_more` in `frame/messages`.
+///
+/// The keys keep the upstream name so the translations still match; the
+/// English shown carries this build's name, as the translations do.
 pub(crate) fn label(english: &str) -> String {
-    text(&key(english), english)
+    text(&key(english), &english.replace("Zephium", "Star"))
 }
 
 pub(crate) fn key(english: &str) -> String {

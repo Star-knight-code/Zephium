@@ -379,6 +379,11 @@ pub trait Settings: Send + Sync {
     fn reduce_motion(&self) -> bool {
         false
     }
+    /// The person lets reversible steps run without asking first. Steps that
+    /// send, buy, delete or carry their data elsewhere still wait for them.
+    fn auto_approve(&self, _profile: &ProfileId) -> bool {
+        false
+    }
 }
 
 /// What a handoff asks to bring along, in the model's words.

@@ -399,7 +399,7 @@
   {/if}
 
   <!-- The name, drawn only as large as itself. -->
-  {#if showWordmark}<svg class="mark" role="img" aria-label="Zephium" style={at(page.mark)}>
+  {#if showWordmark}<svg class="mark" role="img" aria-label="Star" style={at(page.mark)}>
       <defs>
         <path id={`${id}-letters`} d={WORDMARK.d} transform={letters} />
         {#if glint && useSky}<linearGradient

@@ -1289,3 +1289,35 @@ fn closing_one_private_tab_hands_over_to_another() {
     assert_eq!(active_id(&screen), first);
     assert!(shell.incognito_profile(focused_scope(&shell).0));
 }
+
+#[test]
+fn the_mute_key_flips_the_tab_in_front_and_says_which_way() {
+    let seen: Arc<Mutex<Vec<String>>> = Arc::new(Mutex::new(Vec::new()));
+    let sink = seen.clone();
+    let mut shell = Shell::new(
+        Arc::new(FakeEngine::default()),
+        Arc::new(FakeStore::default()),
+        Arc::new(FakeChrome),
+        Box::new(move |p| {
+            if let Projection::UiCommand(id) = p {
+                sink.lock().unwrap().push(id);
+            }
+        }),
+    );
+    shell.handle(Command::Bootstrap);
+    let tab = shell.windows.focused().and_then(|w| w.active).unwrap();
+    shell.handle(Command::Navigate {
+        id: tab,
+        input: "example.com".into(),
+    });
+    seen.lock().unwrap().clear();
+
+    shell.handle(Command::Run("tab.mute".into()));
+    assert!(shell.items.tab(tab).unwrap().audio.muted);
+    shell.handle(Command::Run("tab.mute".into()));
+    assert!(!shell.items.tab(tab).unwrap().audio.muted);
+    assert_eq!(
+        seen.lock().unwrap().as_slice(),
+        ["tab.muted=on", "tab.muted=off"]
+    );
+}

@@ -257,6 +257,8 @@
         bookmarkReveal.request(command.id.slice("bookmark.added=".length));
         toolHost.open("bookmarks");
       }
+      if (command.id === "tab.muted=on") notices.show(m.tab_audio_muted(), "muted");
+      if (command.id === "tab.muted=off") notices.show(m.tab_audio_unmuted(), "sound");
       if (command.id === "extensions.manage") void browserPage.open("extensions");
       if (command.id === "protection.site") void toggleSiteProtection();
       if (command.id === "protection.hide") void hideElements();

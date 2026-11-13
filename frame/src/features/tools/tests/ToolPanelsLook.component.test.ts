@@ -87,7 +87,7 @@ function answer(call: BookmarkCall): BookmarkResponse {
 function visits(): HistoryVisitView[] {
   const now = Math.floor(Date.now() / 1000);
   return [
-    "Inside the new Zephium sidebar",
+    "Inside the new Star sidebar",
     "Rust async book",
     "Apple Human Interface Guidelines",
     "Hacker News",
@@ -109,7 +109,7 @@ function downloads(): DownloadView[] {
       ...base,
       id: "d1",
       created_at: String(now - 60),
-      filename: "Zephium-0.9.0-arm64.dmg",
+      filename: "Star-0.9.0-arm64.dmg",
       source: "https://zephium.app",
       state: "receiving",
       received: "48000000",
@@ -154,7 +154,7 @@ async function shoot(container: HTMLElement, name: string) {
 test("bookmarks, history and downloads share one header, one search and one rhythm", async () => {
   await page.viewport(420, 700);
   const bookmarks = await render(ToolPanelsStage, { tool: "bookmarks" });
-  await expect.element(bookmarks.getByText("Zephium").first()).toBeVisible();
+  await expect.element(bookmarks.getByText("Star").first()).toBeVisible();
   await settle();
   await shoot(bookmarks.container, "bookmarks");
   await bookmarks.getByRole("button", { name: "Add to Bookmarks" }).click();

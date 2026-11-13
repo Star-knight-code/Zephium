@@ -47,7 +47,7 @@ test("distinguishes the global launcher shortcut from the current page-address s
       }),
     )
     .toBeVisible();
-  await expect.element(screen.getByText("For a page’s address in Zephium.")).toBeVisible();
+  await expect.element(screen.getByText("For a page’s address in Star.")).toBeVisible();
   await expect
     .element(
       screen.getByLabelText(acceleratorKeys("CmdOrCtrl+L", IS_MAC).join(" "), { exact: true }),
@@ -71,9 +71,7 @@ test("does not advertise an unbound page shortcut", async () => {
   native.location = null;
   const screen = await render(Launcher);
   await expect.element(screen.getByText("Try it now, from any app.")).toBeVisible();
-  await expect
-    .element(screen.getByText("For a page’s address in Zephium."))
-    .not.toBeInTheDocument();
+  await expect.element(screen.getByText("For a page’s address in Star.")).not.toBeInTheDocument();
 });
 
 test("highlights the pressed page-address keys in their displayed order", async () => {

@@ -68,7 +68,7 @@ const signedIn = account({
       kind: "plan",
       plan: "pro",
       interval: "monthly",
-      name: "Zephium Pro",
+      name: "Star Pro",
       price: { amount_minor: 2000, currency: "usd" },
       features: [],
     },

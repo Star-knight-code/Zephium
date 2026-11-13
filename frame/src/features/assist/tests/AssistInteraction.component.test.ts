@@ -100,7 +100,7 @@ async function open(next: PageAssistStatusV1) {
   await page.viewport(400, 820);
   const onclose = vi.fn();
   const screen = await render(PanelStage, { profile: PROFILE, onclose });
-  const field = screen.getByRole("textbox", { name: "Ask Zephium…" });
+  const field = screen.getByRole("textbox", { name: "Ask Star…" });
   await expect.element(field).toBeVisible();
   await expect.poll(() => native.statusCalls).toBeGreaterThan(0);
   return { screen, field, onclose };
@@ -186,7 +186,7 @@ test("while a reply works, Send is Stop, and Escape stops it before closing anyt
   native.status = status([person(1, "Summarize"), reply(2, [], { state: "working", cost: null })]);
   await page.viewport(400, 820);
   const screen = await render(PanelStage, { profile: PROFILE, onclose });
-  const field = screen.getByRole("textbox", { name: "Ask Zephium…" });
+  const field = screen.getByRole("textbox", { name: "Ask Star…" });
   await expect.element(screen.getByRole("button", { name: "Stop" })).toBeVisible();
   await field.click();
   await userEvent.keyboard("{Escape}");
@@ -405,7 +405,7 @@ test("history lists past conversations, opens one and deletes one", async () => 
   const row = screen.getByRole("button", { name: /^Pricing on the Pro plan/u });
   await expect.element(row).toBeVisible();
   await expect
-    .element(screen.getByText("Zephium keeps your 200 most recent conversations."))
+    .element(screen.getByText("Star keeps your 200 most recent conversations."))
     .toBeVisible();
   await screen.getByRole("button", { name: "Delete “Pricing on the Pro plan”" }).click();
   await expect.poll(() => native.remove.mock.calls.at(-1)).toEqual([SPACE, "c0"]);

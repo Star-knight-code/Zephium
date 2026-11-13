@@ -4,6 +4,8 @@
     Download01Icon,
     HourglassIcon,
     Link04Icon,
+    VolumeHighIcon,
+    VolumeOffIcon,
   } from "@hugeicons/core-free-icons";
   import * as attention from "$session/attention.svelte";
   import * as notices from "$session/notice.svelte";
@@ -19,6 +21,8 @@
     download: Download01Icon,
     focus: HourglassIcon,
     data: Delete02Icon,
+    muted: VolumeOffIcon,
+    sound: VolumeHighIcon,
   };
 
   let current = $derived(notices.notice());

@@ -149,7 +149,7 @@
 <header class="settings-about hero">
   <ZephiumTile size={88} />
   <div class="identity">
-    <span class="zephium-wordmark" role="img" aria-label="Zephium"></span>
+    <span class="zephium-wordmark" role="img" aria-label="Star"></span>
     <p class="meta">
       <span class="version">{about ? m.about_version({ version: about.version }) : ""}</span>
       {#if updatable && about}<Button

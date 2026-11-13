@@ -136,7 +136,7 @@ test("billing trouble preserves acceptance and the old Cloud group stays gone", 
       screen.getByText("Check your provider’s billing or available credits, then try again."),
     )
     .toBeVisible();
-  await expect.element(screen.getByText("Zephium Cloud", { exact: true })).not.toBeInTheDocument();
+  await expect.element(screen.getByText("Star Cloud", { exact: true })).not.toBeInTheDocument();
 });
 
 test("Settings AI exposes Jev setup beside the regular model controls with honest fallback", async () => {

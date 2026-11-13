@@ -18,6 +18,7 @@
   import AiProviderRow from "../AiProviderRow.svelte";
   import AiVoiceRow from "../AiVoiceRow.svelte";
   import AiZephiumRow from "../AiZephiumRow.svelte";
+  import AssistApproval from "../AssistApproval.svelte";
   import WorkDecisions from "../WorkDecisions.svelte";
 
   let profile = $derived(tabs.profile());
@@ -140,6 +141,7 @@
       </p>{/if}
   </SettingsGroup>
   <AiVoiceRow />
+  <AssistApproval />
   <WorkDecisions profile={profile.id} />
 {/if}
 

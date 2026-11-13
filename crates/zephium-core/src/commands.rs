@@ -358,6 +358,12 @@ pub const REGISTRY: &[CommandSpec] = &[
         Group::Bookmarks,
     ),
     command(
+        "tab.mute",
+        "Mute or Unmute Tab",
+        Keys::same("Ctrl+M"),
+        Group::Keys,
+    ),
+    command(
         "tab.next",
         "Next Tab",
         Keys::same("Ctrl+PageDown"),
@@ -960,6 +966,7 @@ mod tests {
             ("Ctrl+Shift+Delete", "settings.clearData"),
             ("Ctrl+H", "tool.history"),
             ("Ctrl+J", "tool.downloads"),
+            ("Ctrl+M", "tab.mute"),
         ] {
             assert_eq!(keys.get(text).copied(), Some(id), "{text}");
             assert_eq!(

@@ -27,6 +27,7 @@ const defaults = {
   "ui.newtab-focus": "true",
   "ui.tab-layout": "vertical",
   "ai.enabled": "true",
+  "ai.auto-approve": "false",
   "work.enabled": "true",
   "work.screenshots": "true",
   "ui.language": "system",

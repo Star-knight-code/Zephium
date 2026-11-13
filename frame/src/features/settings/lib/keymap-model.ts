@@ -46,6 +46,7 @@ const TITLES: Record<string, () => string> = {
   "nav.back": m.command_nav_back,
   "nav.forward": m.command_nav_forward,
   "tab.reopen": m.command_tab_reopen,
+  "tab.mute": m.command_tab_mute,
   "browser.history": m.command_browser_history,
   "tab.next": m.command_tab_next,
   "tab.previous": m.command_tab_previous,

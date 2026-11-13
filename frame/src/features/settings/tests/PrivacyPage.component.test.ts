@@ -57,5 +57,5 @@ test("the release page offers browsing data that works and none of the previews"
   expect(text).not.toContain("Windows diagnostic settings");
   expect(text).not.toContain("Interface preview");
   expect(text).not.toContain("Site exceptions");
-  expect(text).not.toContain("Clear site data when Zephium closes");
+  expect(text).not.toContain("Clear site data when Star closes");
 });

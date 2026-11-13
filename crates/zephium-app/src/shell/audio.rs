@@ -95,6 +95,24 @@ impl Shell {
         operation_result(OperationOutcome::Applied, OperationReason::MutationApplied)
     }
 
+    /// The keyboard's mute: flips the tab in front and tells chrome which way
+    /// it went, since a tab that is silent shows no speaker to read it from.
+    pub(super) fn operation_toggle_tab_mute(&mut self, id: ItemId) -> OperationDisposition {
+        let Some(muted) = self.items.tab(id).map(|tab| !tab.audio.muted) else {
+            return operation_result(OperationOutcome::Rejected, OperationReason::InvalidInput);
+        };
+        let disposition = self.operation_set_tab_muted(id, muted);
+        if self
+            .items
+            .tab(id)
+            .is_some_and(|tab| tab.audio.muted == muted)
+        {
+            let state = if muted { "on" } else { "off" };
+            (self.emit)(Projection::UiCommand(format!("tab.muted={state}")));
+        }
+        disposition
+    }
+
     /// A new native view starts unmuted.
     pub(super) fn restore_tab_mute(&self, id: ItemId) {
         if self.items.tab(id).is_some_and(|tab| tab.audio.muted) {

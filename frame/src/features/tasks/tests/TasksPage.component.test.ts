@@ -137,7 +137,7 @@ test("lists, priorities and subtasks form a persistent task workflow", async () 
   const { screen, session, server } = await setup("all");
   await screen.getByRole("button", { name: "New list", exact: true }).first().click();
   const name = screen.getByRole("textbox", { name: "List name", exact: true });
-  await name.fill("Zephium");
+  await name.fill("Star");
   await name.click();
   await userEvent.keyboard("{Enter}");
   await expect.poll(() => session.lists.length).toBe(1);

@@ -119,9 +119,9 @@ test("what the page has to say stands in the sheet, not above it", async () => {
   native.get.mockResolvedValue(reply(account({ update_required: true })));
   const screen = await render(AccountPage);
   await expect
-    .element(screen.getByText("This server asks for a newer version of Zephium.", { exact: false }))
+    .element(screen.getByText("This server asks for a newer version of Star.", { exact: false }))
     .toBeVisible();
-  expect(sheet().textContent).toContain("Update Zephium to keep using your account here.");
+  expect(sheet().textContent).toContain("Update Star to keep using your account here.");
 });
 
 test("the steps trade by opacity and a slide, and by nothing when motion is reduced", async () => {
@@ -160,5 +160,5 @@ test("the sky is the page's backdrop and its name stays for assistive technology
   await expect.poll(() => gate.dataset.ready, { timeout: 8000 }).toBe("true");
   expect(gate.dataset.sky).toBe("night");
   expect(gate.querySelector<HTMLCanvasElement>(".sky canvas")!.width).toBeGreaterThan(0);
-  await expect.element(screen.getByRole("img", { name: "Zephium" })).toBeVisible();
+  await expect.element(screen.getByRole("img", { name: "Star" })).toBeVisible();
 });

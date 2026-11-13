@@ -106,6 +106,8 @@ mod product {
     static SPACES: Mutex<Option<SpaceTabs>> = Mutex::new(None);
     const MAX_SPACES: usize = 256;
     static REDUCE_MOTION: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+    /// Mirrors `ai.auto-approve`; off until the person turns it on.
+    static AUTO_APPROVE: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 
     fn with_spaces<T>(apply: impl FnOnce(&mut SpaceTabs) -> T) -> T {
         let mut spaces = SPACES.lock().unwrap_or_else(|p| p.into_inner());
@@ -247,6 +249,9 @@ mod product {
     pub(crate) fn preference_changed(key: &str, value: &str) {
         if key == "ui.reduce-motion" {
             REDUCE_MOTION.store(value == "true", std::sync::atomic::Ordering::Relaxed);
+        }
+        if key == "ai.auto-approve" {
+            AUTO_APPROVE.store(value == "true", std::sync::atomic::Ordering::Relaxed);
         }
         if key == "ai.enabled" {
             reader_switch(value != "false");
@@ -710,6 +715,9 @@ mod product {
                 .try_state::<keymap::Keymap>()
                 .is_some_and(|keymap| keymap.ai_enabled())
         }
+        fn auto_approve(&self, _profile: &ProfileId) -> bool {
+            AUTO_APPROVE.load(std::sync::atomic::Ordering::Relaxed)
+        }
     }
 
     /// "Run in Work": a new Work in the tab's Space with the question as its
@@ -1093,6 +1101,10 @@ mod product {
         );
         REDUCE_MOTION.store(
             store.app_setting("ui.reduce-motion").as_deref() == Some("true"),
+            std::sync::atomic::Ordering::Relaxed,
+        );
+        AUTO_APPROVE.store(
+            zephium_core::preferences::ai_auto_approve(|key| store.app_setting(key)),
             std::sync::atomic::Ordering::Relaxed,
         );
         let service = PageAssist::new(Ports {

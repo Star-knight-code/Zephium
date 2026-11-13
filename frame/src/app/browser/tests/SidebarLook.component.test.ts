@@ -70,7 +70,7 @@ test("the rail at rest", async () => {
     .toBeInTheDocument();
   const items = [...stack.querySelectorAll<HTMLElement>(".shelf-item")];
   expect(items.map((item) => item.getAttribute("aria-label"))).toEqual([
-    "Ask Zephium",
+    "Ask Star",
     "Notes",
     "Tasks",
     "Time",

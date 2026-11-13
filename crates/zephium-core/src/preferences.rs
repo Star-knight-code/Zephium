@@ -24,6 +24,7 @@ pub const KEYS: &[&str] = &[
     "ui.tab-layout",
     "onboarding",
     "ai.enabled",
+    "ai.auto-approve",
     "work.enabled",
     "work.screenshots",
     "ui.language",
@@ -183,6 +184,13 @@ pub fn ai_enabled(stored: impl Fn(&str) -> Option<String>) -> bool {
     stored("ai.enabled").as_deref() != Some("false")
 }
 
+/// The page assistant runs reversible steps without asking first. Off unless
+/// the person turned it on; steps that send, buy, delete or carry their data
+/// to another site wait for them either way.
+pub fn ai_auto_approve(stored: impl Fn(&str) -> Option<String>) -> bool {
+    stored("ai.auto-approve").as_deref() == Some("true")
+}
+
 /// Whether a feature switch (`work`, `notes`, `tasks`, `time`) is on.
 pub fn feature_enabled(stored: impl Fn(&str) -> Option<String>, feature: &str) -> bool {
     match feature {
@@ -323,6 +331,7 @@ pub fn value_allowed(key: &str, value: &str) -> bool {
         | "ui.newtab-trackers"
         | "ui.newtab-focus"
         | "ai.enabled"
+        | "ai.auto-approve"
         | "work.enabled"
         | "notes.enabled"
         | "tasks.enabled"
@@ -510,7 +519,12 @@ mod tests {
         assert!(value_allowed("ui.text-size", "large"));
         assert!(value_allowed("ui.tab-layout", "horizontal"));
         assert!(value_allowed("onboarding", "done"));
-        for key in ["ai.enabled", "work.enabled", "work.screenshots"] {
+        for key in [
+            "ai.enabled",
+            "ai.auto-approve",
+            "work.enabled",
+            "work.screenshots",
+        ] {
             assert!(KEYS.contains(&key));
             assert!(value_allowed(key, "true"));
             assert!(value_allowed(key, "false"));
@@ -849,5 +863,15 @@ mod tests {
                 "{refused:?}"
             );
         }
+    }
+
+    #[test]
+    fn auto_approval_is_off_until_explicitly_true() {
+        assert!(!ai_auto_approve(|_| None));
+        assert!(!ai_auto_approve(|_| Some("false".into())));
+        assert!(!ai_auto_approve(|_| Some("yes".into())));
+        assert!(ai_auto_approve(|key| {
+            (key == "ai.auto-approve").then(|| "true".to_owned())
+        }));
     }
 }

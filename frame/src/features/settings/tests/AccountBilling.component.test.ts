@@ -415,7 +415,7 @@ const stagingPacks: AccountV1["offers"] = [
 ].map(([id, units, cents]) => ({
   kind: "top_up" as const,
   id: id as string,
-  name: `Zephium ${id}`,
+  name: `Star ${id}`,
   units: units as string,
   price: { amount_minor: cents as number, currency: "USD" },
   expires_days: 365,

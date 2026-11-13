@@ -37,13 +37,13 @@ fn target(kind: ExportKindView) -> Target {
     match kind {
         ExportKindView::Bookmarks => Target {
             kind: ExportKind::Bookmarks,
-            name: "Zephium bookmarks.html",
+            name: "Star bookmarks.html",
             filter: "HTML",
             extension: "html",
         },
         ExportKindView::History => Target {
             kind: ExportKind::History,
-            name: "Zephium history.csv",
+            name: "Star history.csv",
             filter: "CSV",
             extension: "csv",
         },

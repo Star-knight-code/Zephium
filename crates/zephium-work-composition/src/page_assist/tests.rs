@@ -340,10 +340,13 @@ impl Clock for RealClock {
     }
 }
 
-struct Switch(AtomicBool);
+struct Switch(AtomicBool, AtomicBool);
 impl Settings for Switch {
     fn ai_enabled(&self, _profile: &ProfileId) -> bool {
         self.0.load(Ordering::Acquire)
+    }
+    fn auto_approve(&self, _profile: &ProfileId) -> bool {
+        self.1.load(Ordering::Acquire)
     }
 }
 
@@ -625,7 +628,7 @@ fn harness_with(turns: Vec<Turn>, tools: bool) -> Harness {
         dropped: Arc::new(AtomicBool::new(false)),
     });
     let sink = Arc::new(Sink::default());
-    let ai = Arc::new(Switch(AtomicBool::new(true)));
+    let ai = Arc::new(Switch(AtomicBool::new(true), AtomicBool::new(false)));
     let tabs = Arc::new(FakeTabs(Mutex::default(), page.clone(), Mutex::default()));
     let work = Arc::new(FakeWork::default());
     let store = Arc::new(Store::default());
@@ -1008,6 +1011,100 @@ async fn a_commit_step_waits_for_the_person() {
     };
     assert_eq!(steps[0].state, PageAssistStepStateV1::Done);
     assert_eq!(steps[0].category, Some(WorkConfirmCategoryV1::Purchase));
+}
+
+async fn commit_step(category: WorkConfirmCategoryV1, auto: bool) -> Harness {
+    let h = harness(vec![
+        tool("act", json!({"steps": [{"verb": "click", "ref": "a6"}]})),
+        say("Done."),
+    ]);
+    h.ai.1.store(auto, Ordering::Release);
+    h.page.lock().steps.insert(
+        6,
+        ResolvedStep {
+            label: "Click \"Place order\"".into(),
+            effect: StepEffect::Commit(category),
+        },
+    );
+    h.ask("Do it", true).await.unwrap();
+    for _ in 0..200 {
+        if h.state().await != PageAssistReplyStateV1::Working {
+            break;
+        }
+        tokio::time::sleep(Duration::from_millis(5)).await;
+    }
+    h
+}
+
+#[tokio::test]
+async fn automatic_approval_runs_reversible_steps_without_asking() {
+    for category in [WorkConfirmCategoryV1::Save, WorkConfirmCategoryV1::Edit] {
+        let h = commit_step(category, true).await;
+        h.settle().await;
+        assert_eq!(h.page.lock().acted.len(), 1, "{category:?}");
+        let PageAssistBlockV1::Steps { steps } = &h.blocks().await[0] else {
+            panic!()
+        };
+        assert_eq!(steps[0].state, PageAssistStepStateV1::Done);
+        assert_eq!(steps[0].category, Some(category));
+    }
+}
+
+#[tokio::test]
+async fn automatic_approval_still_asks_before_risky_steps() {
+    for category in [
+        WorkConfirmCategoryV1::Communication,
+        WorkConfirmCategoryV1::Purchase,
+        WorkConfirmCategoryV1::Destructive,
+        WorkConfirmCategoryV1::Type,
+    ] {
+        let h = commit_step(category, true).await;
+        assert_eq!(
+            h.state().await,
+            PageAssistReplyStateV1::Waiting,
+            "{category:?}"
+        );
+        assert!(h.page.lock().acted.is_empty(), "{category:?}");
+    }
+}
+
+#[tokio::test]
+async fn reversible_steps_ask_while_automatic_approval_is_off() {
+    let h = commit_step(WorkConfirmCategoryV1::Save, false).await;
+    assert_eq!(h.state().await, PageAssistReplyStateV1::Waiting);
+    assert!(h.page.lock().acted.is_empty());
+}
+
+#[tokio::test]
+async fn automatic_approval_searches_only_the_persons_own_words() {
+    let own = harness(vec![
+        tool("go_to", json!({"target": "search: weather Hong Kong"})),
+        say("Done."),
+    ]);
+    own.ai.1.store(true, Ordering::Release);
+    own.ask("What is the weather in Hong Kong?", true)
+        .await
+        .unwrap();
+    own.settle().await;
+    assert_eq!(own.tabs.0.lock().unwrap().len(), 1);
+
+    let planted = harness(vec![
+        tool(
+            "go_to",
+            json!({"target": "search: confidential client budget 71329 euros"}),
+        ),
+        say("Done."),
+    ]);
+    planted.ai.1.store(true, Ordering::Release);
+    planted.ask("Summarize this page", true).await.unwrap();
+    for _ in 0..200 {
+        if planted.state().await != PageAssistReplyStateV1::Working {
+            break;
+        }
+        tokio::time::sleep(Duration::from_millis(5)).await;
+    }
+    assert_eq!(planted.state().await, PageAssistReplyStateV1::Waiting);
+    assert!(planted.tabs.0.lock().unwrap().is_empty());
 }
 
 #[tokio::test]

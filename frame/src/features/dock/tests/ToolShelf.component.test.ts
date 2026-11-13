@@ -111,7 +111,7 @@ test("the profile opens on a switcher of who you are, then the tools", async () 
     .poll(() => screen.container.querySelector(".shelf-me-name")?.textContent)
     .toBe("Personal");
   expect(names(screen.container)).toEqual([
-    "Ask Zephium",
+    "Ask Star",
     "Notes",
     "Tasks",
     "Time",
@@ -180,7 +180,7 @@ test("a feature switched off takes its tool out, and an empty group its rule", a
     emitNativeEvent("uiCommand", `preference.${feature}.enabled=false`);
   await expect
     .poll(() => names(screen.container))
-    .toEqual(["Ask Zephium", "History", "Downloads", "Bookmarks", "Settings"]);
+    .toEqual(["Ask Star", "History", "Downloads", "Bookmarks", "Settings"]);
   expect(screen.container.querySelectorAll(".shelf-rule")).toHaveLength(3);
   for (const feature of ["notes", "tasks", "time"])
     emitNativeEvent("uiCommand", `preference.${feature}.enabled=true`);

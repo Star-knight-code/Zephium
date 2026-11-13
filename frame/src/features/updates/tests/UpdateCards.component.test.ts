@@ -79,7 +79,7 @@ test("a first run only marks the version it started at", async () => {
 test("after an update, the card links its release notes and goes once read", async () => {
   await start({ state: "upToDate" }, { "notice.seen-version": "1.0.0" });
   const screen = await render(UpdateCards);
-  await expect.element(screen.getByText("Zephium updated to 1.0.1")).toBeVisible();
+  await expect.element(screen.getByText("Star updated to 1.0.1")).toBeVisible();
 
   await screen.getByRole("button", { name: "See what's new" }).click();
   expect(native.openUrl).toHaveBeenCalledWith("https://zephium.app/changelog#v1-0-1", true);
@@ -90,7 +90,7 @@ test("after an update, the card links its release notes and goes once read", asy
 test("the cards sit flush with the column's edges, which the window already insets", async () => {
   await start({ state: "upToDate" }, { "notice.seen-version": "1.0.0" });
   const screen = await render(UpdateCards);
-  await expect.element(screen.getByText("Zephium updated to 1.0.1")).toBeVisible();
+  await expect.element(screen.getByText("Star updated to 1.0.1")).toBeVisible();
   const stack = screen.container.querySelector(".update-stack")!.getBoundingClientRect();
   const column = screen.container.getBoundingClientRect();
   expect(stack.left).toBe(column.left);
@@ -106,7 +106,7 @@ test("the close button acknowledges the new version without opening anything", a
   expect(native.openUrl).not.toHaveBeenCalled();
 });
 
-test("a platform security update comes first and returns only with a newer Zephium", async () => {
+test("a platform security update comes first and returns only with a newer Star", async () => {
   await start({ state: "upToDate" }, { "notice.seen-version": "1.0.0" }, [
     { kind: "review_overdue", update_target: "zephium" },
     { kind: "update_recommended", update_target: "operating_system" },
@@ -115,7 +115,7 @@ test("a platform security update comes first and returns only with a newer Zephi
   const title = IS_MAC ? "macOS has security updates" : "Your system has security updates";
   await expect.element(screen.getByText(title)).toBeVisible();
   await expect.element(screen.getByText("Install them to keep browsing safely.")).toBeVisible();
-  expect(screen.container.textContent).not.toContain("Zephium updated");
+  expect(screen.container.textContent).not.toContain("Star updated");
   expect(screen.container.textContent).not.toContain("review");
 
   if (IS_MAC) {
@@ -128,10 +128,10 @@ test("a platform security update comes first and returns only with a newer Zephi
   await expect
     .poll(() => native.settingSet.mock.calls)
     .toContainEqual(["notice.security-dismissed", "1.0.1"]);
-  await expect.element(screen.getByText("Zephium updated to 1.0.1")).toBeVisible();
+  await expect.element(screen.getByText("Star updated to 1.0.1")).toBeVisible();
 });
 
-test("WebView2 is named, with no action Zephium cannot take", async () => {
+test("WebView2 is named, with no action Star cannot take", async () => {
   await start({ state: "upToDate" }, { "notice.seen-version": "1.0.1" }, [
     { kind: "update_recommended", update_target: "browser_runtime" },
   ]);
@@ -188,8 +188,8 @@ test("the rail's one glyph relaunches an update, or hands a notice to About", as
   await start({ state: "upToDate" }, { "notice.seen-version": "1.0.0" });
   const onabout = vi.fn();
   const screen = await render(UpdateGlyph, { props: { onabout } });
-  const plate = screen.getByRole("button", { name: "Zephium updated to 1.0.1" });
-  await expect.element(plate).toHaveAttribute("title", "Zephium updated to 1.0.1");
+  const plate = screen.getByRole("button", { name: "Star updated to 1.0.1" });
+  await expect.element(plate).toHaveAttribute("title", "Star updated to 1.0.1");
   await plate.click();
   expect(onabout).toHaveBeenCalledOnce();
   expect(native.settingSet).toHaveBeenCalledWith("notice.seen-version", "1.0.1");
@@ -214,7 +214,7 @@ test("manual installation remains actionable in the sidebar and compact rail", a
   expect(native.relaunch).not.toHaveBeenCalled();
 });
 
-test("a profile only a restart can trust raises a pill that restarts Zephium", async () => {
+test("a profile only a restart can trust raises a pill that restarts Star", async () => {
   await start({ state: "upToDate" }, { "notice.seen-version": "1.0.1" });
   emitNativeEvent("runtimeStatusChanged", {
     ...clear,
@@ -222,7 +222,7 @@ test("a profile only a restart can trust raises a pill that restarts Zephium", a
     restart_reason: "profile",
   });
   const screen = await render(UpdateCards);
-  await screen.getByRole("button", { name: "Restart Zephium" }).click();
+  await screen.getByRole("button", { name: "Restart Star" }).click();
   expect(native.appRelaunch).toHaveBeenCalledOnce();
   expect(native.relaunch).not.toHaveBeenCalled();
   expect(screen.getByRole("button", { name: /dismiss|close/i }).query()).toBeNull();
