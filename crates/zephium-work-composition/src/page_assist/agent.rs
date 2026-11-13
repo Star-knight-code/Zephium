@@ -1053,12 +1053,11 @@ async fn go_to(reply: &Reply, text: &mut Text, target: &str, new_tab: bool) -> T
             query: query.to_owned(),
             state,
         };
-        // A query made only of the person's own words tells the search
-        // engine nothing a page could have planted, so automatic approval
-        // lets it through; it still shows as a block. Any other query waits.
-        let (block, state) = if ports.settings.auto_approve(&reply.profile)
-            && only_the_persons_words(query, &reply.words)
-        {
+        // The person's approval level decides whether the search waits; it
+        // shows as a block either way.
+        let (block, state) = if ports.settings.auto_approve(&reply.profile).searches(
+            zephium_core::preferences::only_own_words(query, &reply.words),
+        ) {
             let block = reply.add_block(text, proposal(PageAssistStepStateV1::Running));
             (block, PageAssistStepStateV1::Running)
         } else {
@@ -1396,33 +1395,6 @@ async fn hand_off(
 }
 
 // -------------------------------------------------------------------- steps
-
-/// Whether a committing step may run without the person's say-so once they
-/// switched automatic approval on. Saving and editing can be put right on the
-/// page afterwards; a message sent, money spent, something deleted, or their
-/// data typed into another site cannot, so those always wait.
-fn runs_unattended(category: WorkConfirmCategoryV1) -> bool {
-    match category {
-        WorkConfirmCategoryV1::Save | WorkConfirmCategoryV1::Edit => true,
-        WorkConfirmCategoryV1::Communication
-        | WorkConfirmCategoryV1::Purchase
-        | WorkConfirmCategoryV1::Destructive
-        | WorkConfirmCategoryV1::Type => false,
-    }
-}
-
-/// Whether every word of `query` is one the person wrote in `words`. A
-/// search that adds anything else could carry page text off the device.
-fn only_the_persons_words(query: &str, words: &str) -> bool {
-    fn tokens(text: &str) -> impl Iterator<Item = String> + '_ {
-        text.split(|c: char| !c.is_alphanumeric())
-            .filter(|word| !word.is_empty())
-            .map(str::to_lowercase)
-    }
-    let written: std::collections::HashSet<String> = tokens(words).collect();
-    let mut asked = tokens(query).peekable();
-    asked.peek().is_some() && asked.all(|word| written.contains(&word))
-}
 
 fn category(effect: StepEffect) -> Option<WorkConfirmCategoryV1> {
     match effect {
@@ -1789,8 +1761,13 @@ async fn run_steps(reply: &Reply, text: &mut Text, plan: &mut Plan) -> Result<()
         {
             resolved.effect = StepEffect::Commit(WorkConfirmCategoryV1::Type);
         }
-        let unattended = category(resolved.effect).is_some_and(runs_unattended)
-            && reply.service.ports().settings.auto_approve(&reply.profile);
+        let own_words = step
+            .value
+            .as_deref()
+            .is_some_and(|value| zephium_core::preferences::only_own_words(value, &reply.words));
+        let level = reply.service.ports().settings.auto_approve(&reply.profile);
+        let unattended =
+            category(resolved.effect).is_some_and(|category| level.runs(category, own_words));
         if matches!(resolved.effect, StepEffect::Commit(_)) && !unattended {
             plan.mark(
                 reply,

@@ -7,6 +7,7 @@ use std::sync::Arc;
 
 use zephium_app::work_models::WorkCallSource;
 use zephium_core::ids::ProfileId;
+use zephium_core::preferences::AutoApproval;
 use zephium_core::work::model::{
     WorkModelClient, WorkModelEntry, WorkModelError, WorkModelReasoning,
 };
@@ -379,10 +380,9 @@ pub trait Settings: Send + Sync {
     fn reduce_motion(&self) -> bool {
         false
     }
-    /// The person lets reversible steps run without asking first. Steps that
-    /// send, buy, delete or carry their data elsewhere still wait for them.
-    fn auto_approve(&self, _profile: &ProfileId) -> bool {
-        false
+    /// How much the person lets run without asking first.
+    fn auto_approve(&self, _profile: &ProfileId) -> AutoApproval {
+        AutoApproval::Ask
     }
 }
 

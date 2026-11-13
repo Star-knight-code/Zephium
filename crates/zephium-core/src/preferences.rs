@@ -1,4 +1,6 @@
 //! Validated UI preferences shared by desktop admission and the application actor.
+use crate::work::runtime::WorkConfirmCategoryV1;
+
 pub const KEYS: &[&str] = &[
     "appearance",
     "search.engine",
@@ -184,11 +186,95 @@ pub fn ai_enabled(stored: impl Fn(&str) -> Option<String>) -> bool {
     stored("ai.enabled").as_deref() != Some("false")
 }
 
-/// The page assistant runs reversible steps without asking first. Off unless
-/// the person turned it on; steps that send, buy, delete or carry their data
-/// to another site wait for them either way.
-pub fn ai_auto_approve(stored: impl Fn(&str) -> Option<String>) -> bool {
-    stored("ai.auto-approve").as_deref() == Some("true")
+/// How much the page assistant does without asking first. Each level adds
+/// to the one before it; paying is never on any of them.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub enum AutoApproval {
+    /// Every committing step waits for the person.
+    #[default]
+    Ask,
+    /// Saves and edits run, and so does typing or searching made only of
+    /// the person's own words. Stored as `true`, the first switch's value.
+    Careful,
+    /// Typing anything and sending also run.
+    Relaxed,
+    /// Deleting runs too: only paying waits.
+    PayOnly,
+}
+
+impl AutoApproval {
+    /// The level a stored `ai.auto-approve` names; anything else asks.
+    pub fn from_stored(value: Option<&str>) -> Self {
+        match value {
+            Some("true") => Self::Careful,
+            Some("relaxed") => Self::Relaxed,
+            Some("pay-only") => Self::PayOnly,
+            _ => Self::Ask,
+        }
+    }
+
+    /// Whether a committing step of `category` runs without the person.
+    /// `own_words` says the text it types is all words the person wrote.
+    pub fn runs(self, category: WorkConfirmCategoryV1, own_words: bool) -> bool {
+        use WorkConfirmCategoryV1::{Communication, Destructive, Edit, Purchase, Save, Type};
+        match (self, category) {
+            (Self::Ask, _) | (_, Purchase) => false,
+            (_, Save | Edit) => true,
+            (Self::Careful, Type) => own_words,
+            (Self::Careful, Communication | Destructive) => false,
+            (Self::Relaxed, Type | Communication) => true,
+            (Self::Relaxed, Destructive) => false,
+            (Self::PayOnly, Type | Communication | Destructive) => true,
+        }
+    }
+
+    /// Whether a search runs without the person. A careful search carries
+    /// only their own words, so no page can plant what it sends.
+    pub fn searches(self, own_words: bool) -> bool {
+        match self {
+            Self::Ask => false,
+            Self::Careful => own_words,
+            Self::Relaxed | Self::PayOnly => true,
+        }
+    }
+
+    /// A small number for a lock-free mirror of the setting.
+    pub const fn code(self) -> u8 {
+        match self {
+            Self::Ask => 0,
+            Self::Careful => 1,
+            Self::Relaxed => 2,
+            Self::PayOnly => 3,
+        }
+    }
+
+    /// The level `code` stands for; an unknown one asks.
+    pub const fn from_code(code: u8) -> Self {
+        match code {
+            1 => Self::Careful,
+            2 => Self::Relaxed,
+            3 => Self::PayOnly,
+            _ => Self::Ask,
+        }
+    }
+}
+
+/// Whether every word of `text` is one the person wrote in `written`.
+/// Anything else could be page text on its way somewhere new.
+pub fn only_own_words(text: &str, written: &str) -> bool {
+    fn tokens(text: &str) -> impl Iterator<Item = String> + '_ {
+        text.split(|c: char| !c.is_alphanumeric())
+            .filter(|word| !word.is_empty())
+            .map(str::to_lowercase)
+    }
+    let written: std::collections::HashSet<String> = tokens(written).collect();
+    let mut asked = tokens(text).peekable();
+    asked.peek().is_some() && asked.all(|word| written.contains(&word))
+}
+
+/// The page assistant's approval level, from the stored setting.
+pub fn ai_auto_approve(stored: impl Fn(&str) -> Option<String>) -> AutoApproval {
+    AutoApproval::from_stored(stored("ai.auto-approve").as_deref())
 }
 
 /// Whether a feature switch (`work`, `notes`, `tasks`, `time`) is on.
@@ -237,6 +323,7 @@ pub fn value_allowed(key: &str, value: &str) -> bool {
         "ui.tab-layout" => matches!(value, "vertical" | "horizontal"),
         "ui.language" => LANGUAGES.contains(&value),
         "ui.density" => matches!(value, "comfortable" | "compact"),
+        "ai.auto-approve" => matches!(value, "false" | "true" | "relaxed" | "pay-only"),
         // Retired for `ui.font-size`; still read once, by `migrations`.
         "ui.text-size" => matches!(value, "small" | "default" | "large"),
         "ui.theme" => crate::theme::theme_allowed(value),
@@ -331,7 +418,6 @@ pub fn value_allowed(key: &str, value: &str) -> bool {
         | "ui.newtab-trackers"
         | "ui.newtab-focus"
         | "ai.enabled"
-        | "ai.auto-approve"
         | "work.enabled"
         | "notes.enabled"
         | "tasks.enabled"
@@ -519,12 +605,7 @@ mod tests {
         assert!(value_allowed("ui.text-size", "large"));
         assert!(value_allowed("ui.tab-layout", "horizontal"));
         assert!(value_allowed("onboarding", "done"));
-        for key in [
-            "ai.enabled",
-            "ai.auto-approve",
-            "work.enabled",
-            "work.screenshots",
-        ] {
+        for key in ["ai.enabled", "work.enabled", "work.screenshots"] {
             assert!(KEYS.contains(&key));
             assert!(value_allowed(key, "true"));
             assert!(value_allowed(key, "false"));
@@ -866,12 +947,64 @@ mod tests {
     }
 
     #[test]
-    fn auto_approval_is_off_until_explicitly_true() {
-        assert!(!ai_auto_approve(|_| None));
-        assert!(!ai_auto_approve(|_| Some("false".into())));
-        assert!(!ai_auto_approve(|_| Some("yes".into())));
-        assert!(ai_auto_approve(|key| {
-            (key == "ai.auto-approve").then(|| "true".to_owned())
-        }));
+    fn auto_approval_asks_until_a_level_is_stored() {
+        for value in ["false", "true", "relaxed", "pay-only"] {
+            assert!(value_allowed("ai.auto-approve", value));
+        }
+        for value in ["", "yes", "all", "TRUE"] {
+            assert!(!value_allowed("ai.auto-approve", value));
+        }
+        assert_eq!(ai_auto_approve(|_| None), AutoApproval::Ask);
+        assert_eq!(ai_auto_approve(|_| Some("yes".into())), AutoApproval::Ask);
+        for (stored, level) in [
+            ("false", AutoApproval::Ask),
+            ("true", AutoApproval::Careful),
+            ("relaxed", AutoApproval::Relaxed),
+            ("pay-only", AutoApproval::PayOnly),
+        ] {
+            assert_eq!(AutoApproval::from_stored(Some(stored)), level);
+            assert_eq!(AutoApproval::from_code(level.code()), level);
+        }
+        assert_eq!(AutoApproval::from_code(9), AutoApproval::Ask);
+    }
+
+    #[test]
+    fn each_approval_level_adds_to_the_last_and_none_pays() {
+        use WorkConfirmCategoryV1::{Communication, Destructive, Edit, Purchase, Save, Type};
+        let all = [Save, Edit, Type, Communication, Destructive, Purchase];
+        let runs = |level: AutoApproval, own: bool| -> Vec<WorkConfirmCategoryV1> {
+            all.into_iter()
+                .filter(|category| level.runs(*category, own))
+                .collect()
+        };
+        for own in [false, true] {
+            assert!(runs(AutoApproval::Ask, own).is_empty());
+            assert_eq!(
+                runs(AutoApproval::Relaxed, own),
+                [Save, Edit, Type, Communication]
+            );
+            assert_eq!(
+                runs(AutoApproval::PayOnly, own),
+                [Save, Edit, Type, Communication, Destructive]
+            );
+        }
+        assert_eq!(runs(AutoApproval::Careful, false), [Save, Edit]);
+        assert_eq!(runs(AutoApproval::Careful, true), [Save, Edit, Type]);
+
+        assert!(!AutoApproval::Ask.searches(true));
+        assert!(AutoApproval::Careful.searches(true));
+        assert!(!AutoApproval::Careful.searches(false));
+        assert!(AutoApproval::Relaxed.searches(false));
+        assert!(AutoApproval::PayOnly.searches(false));
+    }
+
+    #[test]
+    fn own_words_ignore_case_and_punctuation_but_admit_nothing_new() {
+        let asked = "What is the weather in Hong Kong?";
+        assert!(only_own_words("weather Hong Kong", asked));
+        assert!(only_own_words("WEATHER, hong-kong", asked));
+        assert!(!only_own_words("weather Hong Kong budget 71329", asked));
+        assert!(!only_own_words("", asked));
+        assert!(!only_own_words("?!", asked));
     }
 }

@@ -345,8 +345,12 @@ impl Settings for Switch {
     fn ai_enabled(&self, _profile: &ProfileId) -> bool {
         self.0.load(Ordering::Acquire)
     }
-    fn auto_approve(&self, _profile: &ProfileId) -> bool {
-        self.1.load(Ordering::Acquire)
+    fn auto_approve(&self, _profile: &ProfileId) -> zephium_core::preferences::AutoApproval {
+        if self.1.load(Ordering::Acquire) {
+            zephium_core::preferences::AutoApproval::Careful
+        } else {
+            zephium_core::preferences::AutoApproval::Ask
+        }
     }
 }
 
